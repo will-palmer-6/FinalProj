@@ -9,19 +9,20 @@ format: pdf
 library(tidyverse)
 library(lubridate)
 library(marginaleffects)
+library(RCurl)
 ```
 
 # Data Cleaning and Merging
 ```{r}
 
-# READING IN DATA
-MA2020 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2020 (1).csv")
-MA2018_1 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2018_435460759263840626.csv")
-MA2018_2 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2018_PIMS.csv")
-MA2019 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2019.csv")
-MA2021 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2021.csv")
-MA2022 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2022_-3717892713598614431.csv")
-MA2017 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2017_-5030148359353074920.csv")
+# READING IN MINNEAPOLIS DATA
+MA2020 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2020%20(1).csv")
+MA2018_1 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2018_435460759263840626.csv")
+MA2018_2 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2018_PIMS.csv")
+MA2019 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2019.csv")
+MA2021 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2021.csv")
+MA2022 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2022_-3717892713598614431.csv")
+MA2017 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2017_-5030148359353074920.csv")
 
 
 # COMBINING MINNEAPOLIS DATA (2018-2022)
@@ -48,7 +49,7 @@ MA17_22 <- bind_rows(MA17_181, MA182_22)
 
 
 # READING IN ST. PAUL DATA, CLEANED ON REDIVIS
-STP <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/renaming_output.csv")
+STP <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/renaming_output.csv")
 
 
 # COMBINING ST PAUL AND MINNEAPOLIS, CONDENSING INTO CRIME COUNT OVER DESIRE YEARS, SETTING DAYS TO MONTHS
@@ -65,7 +66,7 @@ MN_Crime_Grouped <- MN_Crime |>
 # BALANCING TABLE FOR MONTH NEIGHBORHOODS WITH NO CRIME DATA
 MN_Crime_Grouped <- MN_Crime_Grouped |>
   ungroup() |>
-  complete(neighborhood, month, fill = list(crime = 0)) 
+  tidyr::complete(neighborhood, month, fill = list(crime = 0)) 
 
 # CREATING TREATMENT AND POST JAN 1 2020 VARIABLES FOR LINEAR MODEL
 MN_Crime_Grouped <- MN_Crime_Grouped |>
@@ -76,6 +77,9 @@ MN_Crime_Grouped <- MN_Crime_Grouped |>
 # EXPLORATORY PLOTS AND SUMMARIES 
 MN_Crime_Grouped |> group_by(treatment) |>
   summary()
+
+MN_Crime_Grouped |> group_by(treatment) |>
+  summarize(crime = sum(crime))
 
 ggplot(data = MN_Crime_Grouped, aes(x = month, y = crime, color = as.factor(treatment))) +
   geom_point() +
@@ -88,6 +92,7 @@ summary(lm_Crime)
 glm_Crime <- glm(crime ~ treatment * post, data = MN_Crime_Grouped, family = "poisson")
 summary(glm_Crime)
 
+# MORE INTERPRETABLE GLM RESULTS-- STILL NEED TO LOOK INTO THESE
 avg_slopes(glm_Crime, variables = "treatment", by = "post")
 ```
 
