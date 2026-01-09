@@ -9,7 +9,6 @@ format: pdf
 library(tidyverse)
 library(lubridate)
 library(marginaleffects)
-library(RCurl)
 ```
 
 # Data Cleaning and Merging
@@ -73,6 +72,15 @@ MN_Crime_Grouped <- MN_Crime_Grouped |>
   mutate(treatment = case_when(neighborhood == tolower(neighborhood) ~ 0, is.na(neighborhood) ~ 1, TRUE ~ 1),
          post = ifelse(month < as.Date("2020-01-01"), 1, 0))
 
+# SUMMING ACROSS CITIES TO AVOID NEIGHBORHOOD SIZE IMBALANCE
+MN_Crime_Total <- MN_Crime_Grouped |>
+  group_by(treatment, month, post) |>
+  summarise(crime = sum(crime))
+
+# CRIME RATE CALCULATION
+MN_CrimeRate <- MN_Crime_Total |>
+  mutate(pop = ifelse(treatment == 1, 4.3, 3.1),
+         crime_rate = crime/pop)
 
 # EXPLORATORY PLOTS AND SUMMARIES 
 MN_Crime_Grouped |> group_by(treatment) |>
@@ -85,15 +93,24 @@ ggplot(data = MN_Crime_Grouped, aes(x = month, y = crime, color = as.factor(trea
   geom_point() +
   geom_vline(xintercept = as.Date("2020-01-01"))
 
+ggplot(data = MN_Crime_Total, aes(x = month, y = crime, color = as.factor(treatment))) +
+  geom_point() +
+  geom_vline(xintercept = as.Date("2020-01-01"))
+
+ggplot(data = MN_Crime_Total, aes(x = crime, y = ..density..)) + geom_histogram()
 
 # GLM AND LM MODELS AND OUTPUTS
-lm_Crime <- lm(crime ~ treatment * post, data = MN_Crime_Grouped)
+lm_Rate <- lm(crime_rate ~ treatment * post, data = MN_CrimeRate)
+summary(lm_Rate)
+
+lm_Crime <- lm(crime ~ treatment * post, data = MN_Crime_Total)
 summary(lm_Crime)
-glm_Crime <- glm(crime ~ treatment * post, data = MN_Crime_Grouped, family = "poisson")
+glm_Crime <- glm(crime ~ treatment * post, data = MN_Crime_Total, family = "poisson")
 summary(glm_Crime)
 
 # MORE INTERPRETABLE GLM RESULTS-- STILL NEED TO LOOK INTO THESE
 avg_slopes(glm_Crime, variables = "treatment", by = "post")
+predictions(glm_Crime)
 ```
 
 
