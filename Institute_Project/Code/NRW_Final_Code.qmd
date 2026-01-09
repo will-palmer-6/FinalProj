@@ -4,23 +4,90 @@ author: "Nya, Rian, and Will"
 format: pdf
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
+# Libraries
 ```{r}
-1 + 1
+library(tidyverse)
+library(lubridate)
 ```
 
-You can add options to executable code like this 
-
+# Data Cleaning and Merging
 ```{r}
-#| echo: false
-2 * 2
+
+# READING IN DATA
+MA2020 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2020 (1).csv")
+MA2018_1 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2018_435460759263840626.csv")
+MA2018_2 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2018_PIMS.csv")
+MA2019 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2019.csv")
+MA2021 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2021.csv")
+MA2022 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2022_-3717892713598614431.csv")
+MA2017 <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/Minneapolis/Police_Incidents_2017_-5030148359353074920.csv")
+
+
+# COMBINING MINNEAPOLIS DATA (2018-2022)
+MA182_22 <- bind_rows(MA2020, MA2018_2, MA2019, MA2021, MA2022) 
+
+# FILTERING AND RENAMING/REFORMATTING COLUMNS FOR FUTURE BINDING
+MA182_22 <- MA182_22 |>
+  select(publicaddress, precinct, reportedDate, offense, description, neighborhood, centerLat, centerLong) |>
+  rename(c(lat = centerLat, long = centerLong, reporteddate = reportedDate))
+MA182_22 <- MA182_22 |>
+  mutate(date = as.Date(parse_date_time(reporteddate, orders = c("ymd HMSz", "mdy HMS p"))))
+  
+# COMBINING MINNEAPOLIS DATA (2017-2018)
+MA17_181 <- bind_rows(MA2017, MA2018_1)
+
+# FILTERING AND RENAMING/REFORMATTING COLUMNS FOR FUTURE BINDING
+MA17_181 <- MA17_181 |>
+  select(PublicAddress, Precinct, ReportedDate, Offense, Description, Neighborhood, Lat, Long) |>
+  mutate(date = as.Date(parse_date_time(ReportedDate, orders = "mdy HMS p")))
+names(MA17_181) <- tolower(names(MA17_181))
+
+#BINDING ALL MINNEAPOLIS FROM 2017-2022 AND TRANSFORMING DATE TO MONTH
+MA17_22 <- 
+
+
+# READING IN ST. PAUL DATA, CLEANED ON REDIVIS
+STP <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/renaming_output.csv")
+
+
+# COMBINING ST PAUL AND MINNEAPOLIS, CONDENSING INTO CRIME COUNT OVER DESIRE YEARS, SETTING DAYS TO MONTHS
+MN_Crime <- bind_rows(MA17_22, STP) |>
+  select(neighborhood, date, offense, description, treatment) |>
+  mutate(month = floor_date(date, "month"))
+
+MN_Crime_Grouped <- MN_Crime |>
+  group_by(month, neighborhood, treatment) |>
+  summarize(crime = n()) |>
+  filter(month >= as.Date("2017-01-01")) |>
+  filter(month <= as.Date("2022-12-31")) 
+
+# BALANCING TABLE FOR MONTH NEIGHBORHOODS WITH NO CRIME DATA
+MN_Crime_Grouped <- MN_Crime_Grouped |>
+  ungroup() |>
+  complete(neighborhood, month, fill = list(crime = 0)) 
+
+# CREATING TREATMENT AND POST JAN 1 2020 VARIABLES FOR LINEAR MODEL
+MN_Crime_Grouped <- MN_Crime_Grouped |>
+  mutate(treatment = case_when(neighborhood == tolower(neighborhood) ~ 0, is.na(neighborhood) ~ 1, TRUE ~ 1),
+         post = ifelse(month < as.Date("2020-01-01"), 1, 0))
+
+
+# EXPLORATORY PLOTS AND SUMMARIES 
+MN_Crime_Grouped |> group_by(treatment) |>
+  summary()
+
+ggplot(data = MN_Crime_Grouped, aes(x = month, y = crime, color = as.factor(treatment))) +
+  geom_point() +
+  geom_vline(xintercept = as.Date("2020-01-01"))
+
+
+# GLM AND LM MODELS AND OUTPUTS
+lm_Crime <- lm(crime ~ treatment * post, data = MN_Crime_Grouped)
+summary(lm_Crime)
+glm_Crime <- glm(crime ~ treatment * post, data = MN_Crime_Grouped, family = "poisson")
+summary(glm_Crime)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+
+
+
