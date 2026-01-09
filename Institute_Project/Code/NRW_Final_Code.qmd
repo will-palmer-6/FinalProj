@@ -8,6 +8,7 @@ format: pdf
 ```{r}
 library(tidyverse)
 library(lubridate)
+library(marginaleffects)
 ```
 
 # Data Cleaning and Merging
@@ -43,7 +44,7 @@ MA17_181 <- MA17_181 |>
 names(MA17_181) <- tolower(names(MA17_181))
 
 #BINDING ALL MINNEAPOLIS FROM 2017-2022 AND TRANSFORMING DATE TO MONTH
-MA17_22 <- 
+MA17_22 <- bind_rows(MA17_181, MA182_22)
 
 
 # READING IN ST. PAUL DATA, CLEANED ON REDIVIS
@@ -52,11 +53,11 @@ STP <- read_csv("/Users/willcpalmer/Desktop/FinalProj/Institute_Project/Data/ren
 
 # COMBINING ST PAUL AND MINNEAPOLIS, CONDENSING INTO CRIME COUNT OVER DESIRE YEARS, SETTING DAYS TO MONTHS
 MN_Crime <- bind_rows(MA17_22, STP) |>
-  select(neighborhood, date, offense, description, treatment) |>
+  select(neighborhood, date, offense, description) |>
   mutate(month = floor_date(date, "month"))
 
 MN_Crime_Grouped <- MN_Crime |>
-  group_by(month, neighborhood, treatment) |>
+  group_by(month, neighborhood) |>
   summarize(crime = n()) |>
   filter(month >= as.Date("2017-01-01")) |>
   filter(month <= as.Date("2022-12-31")) 
@@ -86,6 +87,8 @@ lm_Crime <- lm(crime ~ treatment * post, data = MN_Crime_Grouped)
 summary(lm_Crime)
 glm_Crime <- glm(crime ~ treatment * post, data = MN_Crime_Grouped, family = "poisson")
 summary(glm_Crime)
+
+avg_slopes(glm_Crime, variables = "treatment", by = "post")
 ```
 
 
