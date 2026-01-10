@@ -25,6 +25,12 @@ abstract: "We examine the relationship between upzoning and the occurrence of au
 library(tidyverse)
 library(lubridate)
 library(marginaleffects)
+library(randomForest)
+library(broom)
+library(kableExtra)
+library(knitr)
+library(scales)
+
 ```
 
 ## Introduction
@@ -139,9 +145,38 @@ ggplot(data = MN_Crime_Total, aes(x = crime, y = after_stat(count))) + geom_hist
 
 The predictors are the same for both models. We hope that with both these models we can gain insights into both simple linear and more complex non-linear trends about crime response’s to upzoning in cities like Minneapolis. We do however note that without any additional predictors from other datasets, excluding those controlled by St. Paul, there are without doubt numerous confounders which influence our results.
 
+We run a very simple random forest to further explore the model, understanding just how much variation the model represents and the importance of each variable. We use the randomForest (Liaw & Wiener, 2002) package but given our lack of other predictors and smaller dataset size due to aggregation limitations, we don't rely heavily on these results.
+
 Our analysis is performed in R using the tidyverse (Wickham et al., 2019), lubridate (Grolemund & Wickham, 2011), and marginaleffects (Arel-Bundock et al., 2024) packages. These packages primarily help with data wrangling and interpretation of results.
 
+```{r}
+#| echo: false
+#| message: false
+# Setting seed and defining data groups for random forest training
+set.seed(20187)
+train_index <- sample(1:nrow(MN_CrimeRate), 0.8 * nrow(MN_CrimeRate))
+train_data <- MN_CrimeRate[train_index, ]
+test_data <- MN_CrimeRate[-train_index, ]
+
+# Actual random forest
+MN_rf <- randomForest(crime_rate ~ treatment * post, data = train_data)
+
+```
+
 ## Results
+
+Our random forest model confirms many of these uncertain results. It reveals that our limited model only accounts for 14.76%, a fraction, of the actual variation in crime rates. It also highlights that the time period predictor seems significantly more important than the treatment city predictor (@fig-rf). Potentially this implies future research should focus on including variables which differ between Minneapolis and St. Paul to better capture parallel trends.
+
+```{r}
+#| label: fig-rf
+#| echo: false
+#| warning: false
+#| fig-cap: Simple Random Forest
+
+varImpPlot(MN_rf)
+
+```
+
 
 Tba
 
@@ -156,6 +191,7 @@ However, we also recommend that more analysis is done, particularly incorporatin
 We believe this report reinforces the importance of debate and continued discussion in the field. All concerns are valid and continued data analysis is perhaps the best way to help determine which direction governments and cities should pursue.
 
 \clearpage
+
 
 ## References
 
@@ -176,6 +212,8 @@ Grolemund, G., & Wickham, H. (2011). Dates and Times Made Easy with lubridate. J
 Gu, H., & Murno, D. (2025). Zoning reforms and housing affordability: Evidence from the Minneapolis 2040 Plan. Social Science Research Network. <https://dx.doi.org/10.2139/ssrn.5347083>
 
 He, Q., & Li, J. (2025). The roles of built environment and social disadvantage on the geography of property crime. Cities: The International Journal of Urban Policy and Planning. <https://doi.org/10.1016/j.cities.2021.103471>
+
+Liaw, A., & Wiener, M. (2002). Classification and Regression by randomForest. R News, 2(3), 18–22.
 
 Ma, N. et al. (2025). Dangerous density: Urban density and the criminalization of China. International Review of Economics & Finance. <https://doi.org/10.1016/j.iref.2025.104025>
 

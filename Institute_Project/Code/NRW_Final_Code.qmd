@@ -9,6 +9,9 @@ format: pdf
 library(tidyverse)
 library(lubridate)
 library(marginaleffects)
+library(broom)
+library(kableExtra)
+library(knitr)
 ```
 
 # Data Cleaning and Merging
@@ -111,9 +114,34 @@ summary(glm_Crime)
 # MORE INTERPRETABLE GLM RESULTS-- STILL NEED TO LOOK INTO THESE
 avg_slopes(glm_Crime, variables = "treatment", by = "post")
 predictions(glm_Crime)
+
 ```
 
 ```{r}
+library(randomForest)
+
+# Setting seed and defining data groups for random forest training
+set.seed(20187)
+train_index <- sample(1:nrow(MN_CrimeRate), 0.8 * nrow(MN_CrimeRate))
+train_data <- MN_CrimeRate[train_index, ]
+test_data <- MN_CrimeRate[-train_index, ]
+
+# Actual random forest
+MN_rf <- randomForest(crime_rate ~ treatment * post, data = train_data)
+MN_rf
+rf_preds <- predict(MN_rf, test_data)
+
+#Importance Plots
+varImpPlot(MN_rf)
+importance(MN_rf)
+```
+
+
+```{r}
+#Plotting
+#Difference in Differences
+
+library(ggplot2)
 library(scales)
 
 # Make sure post variable is correctly coded (1 after Jan 2020, 0 before)
@@ -135,7 +163,7 @@ ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
   geom_line(size = 1) +
   geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "black") +
   labs(
-    title = "Monthly Auto-Related Crime Trends",
+    title = "Difference-in-Differences: Monthly Auto-Related Crime Trends",
     subtitle = "Treatment (Minneapolis) vs Control (St. Paul) Groups",
     x = "Month",
     y = "Total Count of Auto-Related Crimes",
@@ -145,17 +173,6 @@ ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(face = "bold", size = 14),
     plot.subtitle = element_text(size = 12))
-    
-#Linear Regression 
-
-# Make sure the dataset is ungrouped
-
-MN_Crime_Total <- MN_Crime_Total |> ungroup()
-
-# Add predicted values from the linear model
-
-MN_Crime_Total <- MN_Crime_Total |>
-  mutate(predicted_crime = predict(lm_Crime, newdata = MN_Crime_Total))
 
 ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
   geom_point(alpha = 0.5) +
@@ -165,7 +182,7 @@ ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
     title = "Linear Regression Plot: Difference-in-Differences",
     subtitle = "Fitted DiD lines for Minneapolis (treatment) vs St. Paul (control)",
     x = "Month",
-    y = "Total Count of Auto-Related Crimes",
+    y = "Total Count of Crimes",
     color = "City"
   ) +
   scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
@@ -173,7 +190,69 @@ ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(face = "bold", size = 14),
-    plot.subtitle = element_text(size = 12))
+    plot.subtitle = element_text(size = 12)
+  )
+
+
+# 1. Create the table
+new_table <- tibble::tribble(
+  ~term, ~estimate, ~std.error, ~statistic, ~p.value,
+  "(Intercept)", 168.934, 5.552, 30.430, 0.000,
+  "treatment", -8.314, 7.851, -1.059, 0.291,
+  "post", -45.305, 7.851, -5.771, 0.000,
+  "treatment:post", 18.535, 11.103, 1.669, 0.097
+)
+
+# 2. Rename terms
+new_table <- new_table %>%
+  mutate(
+    term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "treatment" ~ "Treatment",
+      term == "post" ~ "Post",
+      term == "treatment:post" ~ "DiD Estimate",
+      TRUE ~ term
+    )
+  )
+
+# 3. Capitalize column headers
+colnames(new_table) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value")
+
+# 4. Print the table with kable
+new_table_kable <- kable(
+  new_table,
+  digits = 2,
+  caption = "Linear Regression (DiD) Results: Crime Rate"
+)
+
+new_table_kable
+
+# 1. Create the tidy regression table
+CrimeRateTable <- tidy(lm_Crime)
+
+# 2. Rename the 'term' column values and capitalize everything
+CrimeRateTable <- CrimeRateTable %>%
+  mutate(
+    term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "treatment" ~ "Treatment",
+      term == "post" ~ "Post",
+      term == "treatment:post" ~ "DiD Estimate",
+      TRUE ~ term
+    )
+  )
+
+# Capitalize column headers
+colnames(CrimeRateTable) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value")
+
+# 3. Print the table with kable
+CrimeRateTable2 <- kable(
+  CrimeRateTable,
+  digits = 2,
+  caption = "Linear Regression (DiD) Results"
+)
+
+CrimeRateTable2
 ```
 
 
