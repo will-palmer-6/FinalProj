@@ -183,15 +183,13 @@ ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
     subtitle = "Fitted DiD lines for Minneapolis (treatment) vs St. Paul (control)",
     x = "Month",
     y = "Total Count of Crimes",
-    color = "City"
-  ) +
+    color = "City") +
   scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(face = "bold", size = 14),
-    plot.subtitle = element_text(size = 12)
-  )
+    plot.subtitle = element_text(size = 12))
 
 
 # 1. Create the table
@@ -200,8 +198,7 @@ new_table <- tibble::tribble(
   "(Intercept)", 168.934, 5.552, 30.430, 0.000,
   "treatment", -8.314, 7.851, -1.059, 0.291,
   "post", -45.305, 7.851, -5.771, 0.000,
-  "treatment:post", 18.535, 11.103, 1.669, 0.097
-)
+  "treatment:post", 18.535, 11.103, 1.669, 0.097)
 
 # 2. Rename terms
 new_table <- new_table %>%
@@ -211,9 +208,7 @@ new_table <- new_table %>%
       term == "treatment" ~ "Treatment",
       term == "post" ~ "Post",
       term == "treatment:post" ~ "DiD Estimate",
-      TRUE ~ term
-    )
-  )
+      TRUE ~ term))
 
 # 3. Capitalize column headers
 colnames(new_table) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value")
@@ -222,8 +217,7 @@ colnames(new_table) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value"
 new_table_kable <- kable(
   new_table,
   digits = 2,
-  caption = "Linear Regression (DiD) Results: Crime Rate"
-)
+  caption = "Linear Regression (DiD) Results: Crime Rate")
 
 new_table_kable
 
@@ -238,9 +232,7 @@ CrimeRateTable <- CrimeRateTable %>%
       term == "treatment" ~ "Treatment",
       term == "post" ~ "Post",
       term == "treatment:post" ~ "DiD Estimate",
-      TRUE ~ term
-    )
-  )
+      TRUE ~ term))
 
 # Capitalize column headers
 colnames(CrimeRateTable) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value")
@@ -249,8 +241,7 @@ colnames(CrimeRateTable) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.V
 CrimeRateTable2 <- kable(
   CrimeRateTable,
   digits = 2,
-  caption = "Linear Regression (DiD) Results"
-)
+  caption = "Linear Regression (DiD) Results")
 
 CrimeRateTable2
 ```
