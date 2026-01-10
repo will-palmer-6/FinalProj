@@ -113,6 +113,68 @@ avg_slopes(glm_Crime, variables = "treatment", by = "post")
 predictions(glm_Crime)
 ```
 
+```{r}
+library(scales)
+
+# Make sure post variable is correctly coded (1 after Jan 2020, 0 before)
+
+MN_Crime_Total <- MN_Crime_Total |>
+  mutate(post = ifelse(month >= as.Date("2020-01-01"), 1, 0))
+
+# Assign city labels to treatment groups
+
+MN_Crime_Total <- MN_Crime_Total |>
+  mutate(
+    city = case_when(
+      treatment == 1 ~ "Minneapolis",
+      treatment == 0 ~ "St. Paul"))
+
+# DiD Plot with city labels
+
+ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "black") +
+  labs(
+    title = "Monthly Auto-Related Crime Trends",
+    subtitle = "Treatment (Minneapolis) vs Control (St. Paul) Groups",
+    x = "Month",
+    y = "Total Count of Auto-Related Crimes",
+    color = "City") +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12))
+    
+#Linear Regression 
+
+# Make sure the dataset is ungrouped
+
+MN_Crime_Total <- MN_Crime_Total |> ungroup()
+
+# Add predicted values from the linear model
+
+MN_Crime_Total <- MN_Crime_Total |>
+  mutate(predicted_crime = predict(lm_Crime, newdata = MN_Crime_Total))
+
+ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
+  geom_point(alpha = 0.5) +
+  geom_line(aes(y = predicted_crime), size = 1.2) +
+  geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "black") +
+  labs(
+    title = "Linear Regression Plot: Difference-in-Differences",
+    subtitle = "Fitted DiD lines for Minneapolis (treatment) vs St. Paul (control)",
+    x = "Month",
+    y = "Total Count of Auto-Related Crimes",
+    color = "City"
+  ) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12))
+```
 
 
 
