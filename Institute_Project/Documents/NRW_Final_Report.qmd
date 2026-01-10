@@ -121,6 +121,12 @@ MN_Crime_Total <- MN_Crime_Grouped |>
 MN_CrimeRate <- MN_Crime_Total |>
   mutate(pop = ifelse(treatment == 1, 4.3, 3.1),
          crime_rate = crime/pop)
+
+# REGRESSIONS
+lm_Rate <- lm(crime_rate ~ treatment * post, data = MN_CrimeRate)
+lm_Crime <- lm(crime ~ treatment * post, data = MN_Crime_Total)
+glm_Crime <- glm(crime ~ treatment * post, data = MN_Crime_Total, family = "poisson")
+
 ```
 
 We perform this analysis using crime timestamp data from Open Information St. Paul (Saint Paul Minnesota, n.d.) and Open Data Minneapolis (The City of Minneapolis, 2017-2022). The data originally is formatted in crime occurrences. We aggregate this to crime count per month in each city as neighborhood size and county varies by city. This is a common metric for crime analysis like this. We filter the timeframe to 3 years before and after the implementation of Minneapolis’ upzoning, ranging from 2017-2022. We choose to specifically filter the data to just auto theft and theft of automobile related crimes. These are often less personal crimes and are more independent of other factors, making them optimal for analysis. These crimes are also generally easier to commit, making them more dynamic, especially with population density, and more likely to appear in data trends (Clement et al., 2025). We also note that both cities define auto-related crime very similarly (McDonough Law). We clean and reformat the data using both R (R Core Team, 2025) and Redivis (Redivis, 2025).
@@ -165,6 +171,154 @@ MN_rf <- randomForest(crime_rate ~ treatment * post, data = train_data)
 
 ## Results
 
+We expect the Difference-in-Differences (DiD), Linear Regression, and Poisson models to determine whether the implementation of the Minneapolis 2040 Plan is associated with changes in auto-related property crime. Monthly counts of auto theft and theft from auto from 2017-2022 are compared between Minneapolis (treatment group) and St. Paul (control group), with January 1, 2020 marking the shift to the post-treatment period.
+
+```{r}
+#| label: fig-CR-Did
+#| echo: false
+#| warning: false
+
+MN_Crime_Total <- MN_Crime_Total |>
+mutate(post = ifelse(month >= as.Date("2020-01-01"), 1, 0))
+# Assign city labels to treatment groups
+MN_Crime_Total <- MN_Crime_Total |>
+mutate(
+city = case_when(
+treatment == 1 ~ "Minneapolis",
+treatment == 0 ~ "St. Paul"))
+# DiD Plot with city labels
+ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
+geom_line(size = 1) + geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "black") +
+labs(
+title = "Monthly Auto-Related Crime Trends",
+subtitle = "Treatment (Minneapolis) vs Control (St. Paul) Groups",
+x = "Month",
+y = "Total Count of Auto-Related Crimes",
+color = "City") +
+scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
+theme_minimal() +
+theme(axis.text.x = element_text(angle = 45, hjust = 1),
+plot.title = element_text(face = "bold", size = 14),
+plot.subtitle = element_text(size = 12))
+
+
+```
+
+@fig-CR-Did exhibits monthly auto-related crime trends for Minneapolis and St. Paul from 2017 to 2023. Prior to March 2019, the two cities exhibit similar crime levels and largely parallel trends. In March 2019, Minneapolis experiences a substantial increase in auto-related crime, rising from approximately 500 to nearly 900 reported incidents over a six-month period. This represents the largest crime peak observed until 2022. During the same period, St. Paul experiences a smaller and more fluctuating increase in crime.
+
+Following this peak, auto-related crime declines steadily in both cities through May 2020. No sharp or immediate change in crime levels is observed following the implementation of the Minneapolis 2040 upzoning legislation in January 2020. After May 2020, both cities again exhibit roughly parallel trends, with crime increasing during the summer months, and decreasing in the winter months consistent with seasonal patterns.
+
+This pattern continues until March 2022, when St. Paul’s auto-related crime exceeds that of Minneapolis for the only time during the study period. At this point, St. Paul records approximately 800 reported incidents, its highest monthly count in the sample, while Minneapolis’ crime count falls below 600. Subsequently, crime declines steadily in St. Paul, while Minneapolis experiences a sharp increase before both cities’ crime levels fall again during the winter months.
+
+Overall, the evidence presented in @fig-CR-Did supports the parallel trends assumption seen in the Difference-in-Differences regression model (@fig-CC-Did). Here @fig-CC-Did also shows the considerable baseline difference between crime in the two cities, and the considerable decline that occurred around January 2020 as seen in @fig-CR-Did.
+
+```{r}
+#| label: fig-CC-Did
+#| echo: false
+#| warning: false
+
+MN_Crime_Total <- MN_Crime_Total |> ungroup()
+# Add predicted values from the linear model
+MN_Crime_Total <- MN_Crime_Total |>
+mutate(predicted_crime = predict(lm_Crime, newdata = MN_Crime_Total))
+ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
+geom_point(alpha = 0.5) +
+geom_line(aes(y = predicted_crime), size = 1.2) +
+geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "black") +
+labs(
+title = "Linear Regression Plot: Difference-in-Differences",
+subtitle = "Fitted DiD lines for Minneapolis (treatment) vs St. Paul (control)",
+x = "Month",
+y = "Total Count of Auto-Related Crimes",
+color = "City"
+) +
+scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
+theme_minimal() +
+theme(
+axis.text.x = element_text(angle = 45, hjust = 1),
+plot.title = element_text(face = "bold", size = 14),
+plot.subtitle = element_text(size = 12))
+
+```
+
+While both Minneapolis and St. Paul experience substantial fluctuations in auto-related crime over time, and a decline is seen immediately around January 2020, post-2020 general trends still indicate a slight relative increase in crime in Minneapolis compared to St. Paul, consistent with the positive DiD estimates reported in the regression analysis (@tbl-CR). 
+
+```{r}
+#| label: tbl-CR
+#| echo: false
+#| warning: false
+
+
+new_table <- tibble::tribble(
+~term, ~estimate, ~std.error, ~statistic, ~p.value,
+"(Intercept)", 168.934, 5.552, 30.430, 0.000,
+"treatment",
+-8.314, 7.851,
+-1.059, 0.291,
+"post",
+-45.305, 7.851,
+-5.771, 0.000,
+"treatment:post", 18.535, 11.103, 1.669, 0.097
+)
+# 2. Rename terms
+new_table <- new_table %>%
+mutate(
+term = case_when(
+term == "(Intercept)" ~ "Intercept",
+term == "treatment" ~ "Treatment",
+term == "post" ~ "Post",
+term == "treatment:post" ~ "DiD Estimate",
+TRUE ~ term
+)
+)
+# 3. Capitalize column headers
+colnames(new_table) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value")
+16# 4. Print the table with kable
+new_table_kable <- kable(
+new_table,
+digits = 2,
+caption = "Linear Regression (DiD) Results: Crime Rate"
+)
+new_table_kable
+
+```
+
+The estimated effects however are not statistically strong enough to conclude that the Minneapolis 2040 planning legislation directly caused or correlates to this outcome. This analysis does not explicitly account for major events occurring during the study period, notably the COVID-19 pandemic or the large-scale Black Lives Matter protests and civil unrest which may have disproportionately affected crime patterns in Minneapolis especially.
+
+Results from the linear DiD regression are displayed in @tbl-crimecount. The coefficient on the treatment indicator (-8.31) is negative and statistically insignificant, showing no meaningful difference in auto-related crime levels between Minneapolis and St. Paul prior to 2020. The post-period indicator (-45.30) is negative and statistically significant, reflecting a substantial decline in auto-related crime in the control group after 2020. The DiD P-Value (P = 0.10) is positive and marginally significant, but is weak and does give basis for conclusion. This estimate suggests that after considering baseline differences and typical trends over time, Minneapolis experienced approximately 19 additional auto-related crimes per month compared to St. Paul after the 2040 Plan.
+
+```{r}
+#| label: tbl-crimecount
+#| echo: false
+#| warning: false
+
+CrimeRateTable <- tidy(lm_Crime)
+# 2. Rename the 'term' column values and capitalize everything
+CrimeRateTable <- CrimeRateTable %>%
+mutate(
+term = case_when(
+term == "(Intercept)" ~ "Intercept",
+term == "treatment" ~ "Treatment",
+term == "post" ~ "Post",
+term == "treatment:post" ~ "DiD Estimate",
+TRUE ~ term
+)
+)
+# Capitalize column headers
+colnames(CrimeRateTable) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value")
+# 3. Print the table with kable
+CrimeRateTable2 <- kable(
+CrimeRateTable,
+digits = 2,
+caption = "Linear Regression (DiD) Results")
+CrimeRateTable2
+
+```
+
+To consider the nature of the outcome variable (count), we also estimate a Poisson generalized linear model. Estimates from this model are shown in @tbl-crimecount. In the linear regression results, the Intercept indicates that in St. Paul before 2020, the average monthly crime count was approximately 523.7, with a standard error of 21.88 (p < 0.001). The Treatment coefficient (166.97 (Std.Error = 30.95, p < 0.001)) shows that Minneapolis had a higher crime rate than St. Paul before 2020, reflecting baseline differences between the cities. The Post coefficient (−140.44 (Std.Error = 30.95, p < 0.001)) shows that the crime rate in St. Paul decreased by about 140 incidents per month after January 2020.
+
+The DiD Estimate is 25.33 (Std.Error = 43.76, p = 0.56). This positive estimate suggests that Minneapolis experienced a slight relative increase in crime rate after 2020 compared to St. Paul, but the effect is small and imprecise, as can be seen in the large standard error and insignificant p-value. Ultimately, results from all methods of statistical analysis used do not provide statistically strong evidence that the Minneapolis 2040 zoning reform affected crime rates.
+
 Our random forest model confirms many of these uncertain results. It reveals that our limited model only accounts for 14.76%, a fraction, of the actual variation in crime rates. It also highlights that the time period predictor seems significantly more important than the treatment city predictor (@fig-rf). Potentially this implies future research should focus on including variables which differ between Minneapolis and St. Paul to better capture parallel trends.
 
 ```{r}
@@ -176,9 +330,6 @@ Our random forest model confirms many of these uncertain results. It reveals tha
 varImpPlot(MN_rf)
 
 ```
-
-
-Tba
 
 ## Discussion
 
