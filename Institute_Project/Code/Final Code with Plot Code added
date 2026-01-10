@@ -1,0 +1,178 @@
+---
+title: "Final Project Code"
+author: "Nya, Rian, and Will"
+format: pdf
+---
+
+# Libraries
+```{r}
+library(tidyverse)
+library(lubridate)
+library(marginaleffects)
+```
+
+# Data Cleaning and Merging
+```{r}
+
+# READING IN MINNEAPOLIS DATA
+MA2020 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2020%20(1).csv")
+MA2018_1 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2018_435460759263840626.csv")
+MA2018_2 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2018_PIMS.csv")
+MA2019 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2019.csv")
+MA2021 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2021.csv")
+MA2022 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2022_-3717892713598614431.csv")
+MA2017 <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/Minneapolis/Police_Incidents_2017_-5030148359353074920.csv")
+
+
+# COMBINING MINNEAPOLIS DATA (2018-2022)
+MA182_22 <- bind_rows(MA2020, MA2018_2, MA2019, MA2021, MA2022) 
+
+# FILTERING AND RENAMING/REFORMATTING COLUMNS FOR FUTURE BINDING
+MA182_22 <- MA182_22 |>
+  select(publicaddress, precinct, reportedDate, offense, description, neighborhood, centerLat, centerLong) |>
+  rename(c(lat = centerLat, long = centerLong, reporteddate = reportedDate))
+MA182_22 <- MA182_22 |>
+  mutate(date = as.Date(parse_date_time(reporteddate, orders = c("ymd HMSz", "mdy HMS p"))))
+  
+# COMBINING MINNEAPOLIS DATA (2017-2018)
+MA17_181 <- bind_rows(MA2017, MA2018_1)
+
+# FILTERING AND RENAMING/REFORMATTING COLUMNS FOR FUTURE BINDING
+MA17_181 <- MA17_181 |>
+  select(PublicAddress, Precinct, ReportedDate, Offense, Description, Neighborhood, Lat, Long) |>
+  mutate(date = as.Date(parse_date_time(ReportedDate, orders = "mdy HMS p")))
+names(MA17_181) <- tolower(names(MA17_181))
+
+#BINDING ALL MINNEAPOLIS FROM 2017-2022 AND TRANSFORMING DATE TO MONTH
+MA17_22 <- bind_rows(MA17_181, MA182_22)
+
+
+# READING IN ST. PAUL DATA, CLEANED ON REDIVIS
+STP <- read_csv("https://raw.githubusercontent.com/will-palmer-6/FinalProj/refs/heads/main/Institute_Project/Data/renaming_output.csv")
+
+
+# COMBINING ST PAUL AND MINNEAPOLIS, CONDENSING INTO CRIME COUNT OVER DESIRE YEARS, SETTING DAYS TO MONTHS
+MN_Crime <- bind_rows(MA17_22, STP) |>
+  select(neighborhood, date, offense, description) |>
+  mutate(month = floor_date(date, "month"))
+
+MN_Crime_Grouped <- MN_Crime |>
+  group_by(month, neighborhood) |>
+  summarize(crime = n()) |>
+  filter(month >= as.Date("2017-01-01")) |>
+  filter(month <= as.Date("2022-12-31")) 
+
+# BALANCING TABLE FOR MONTH NEIGHBORHOODS WITH NO CRIME DATA
+MN_Crime_Grouped <- MN_Crime_Grouped |>
+  ungroup() |>
+  tidyr::complete(neighborhood, month, fill = list(crime = 0)) 
+
+# CREATING TREATMENT AND POST JAN 1 2020 VARIABLES FOR LINEAR MODEL
+MN_Crime_Grouped <- MN_Crime_Grouped |>
+  mutate(treatment = case_when(neighborhood == tolower(neighborhood) ~ 0, is.na(neighborhood) ~ 1, TRUE ~ 1),
+         post = ifelse(month < as.Date("2020-01-01"), 1, 0))
+
+# SUMMING ACROSS CITIES TO AVOID NEIGHBORHOOD SIZE IMBALANCE
+MN_Crime_Total <- MN_Crime_Grouped |>
+  group_by(treatment, month, post) |>
+  summarise(crime = sum(crime))
+
+# CRIME RATE CALCULATION
+MN_CrimeRate <- MN_Crime_Total |>
+  mutate(pop = ifelse(treatment == 1, 4.3, 3.1),
+         crime_rate = crime/pop)
+
+# EXPLORATORY PLOTS AND SUMMARIES 
+MN_Crime_Grouped |> group_by(treatment) |>
+  summary()
+
+MN_Crime_Grouped |> group_by(treatment) |>
+  summarize(crime = sum(crime))
+
+ggplot(data = MN_Crime_Grouped, aes(x = month, y = crime, color = as.factor(treatment))) +
+  geom_point() +
+  geom_vline(xintercept = as.Date("2020-01-01"))
+
+ggplot(data = MN_Crime_Total, aes(x = month, y = crime, color = as.factor(treatment))) +
+  geom_point() +
+  geom_vline(xintercept = as.Date("2020-01-01"))
+
+ggplot(data = MN_Crime_Total, aes(x = crime, y = ..density..)) + geom_histogram()
+
+# GLM AND LM MODELS AND OUTPUTS
+lm_Rate <- lm(crime_rate ~ treatment * post, data = MN_CrimeRate)
+summary(lm_Rate)
+
+lm_Crime <- lm(crime ~ treatment * post, data = MN_Crime_Total)
+summary(lm_Crime)
+glm_Crime <- glm(crime ~ treatment * post, data = MN_Crime_Total, family = "poisson")
+summary(glm_Crime)
+
+# MORE INTERPRETABLE GLM RESULTS-- STILL NEED TO LOOK INTO THESE
+avg_slopes(glm_Crime, variables = "treatment", by = "post")
+predictions(glm_Crime)
+```
+#Plotting
+#Difference in Differences
+
+library(ggplot2)
+library(scales)
+
+# Make sure post variable is correctly coded (1 after Jan 2020, 0 before)
+
+MN_Crime_Total <- MN_Crime_Total |>
+  mutate(post = ifelse(month >= as.Date("2020-01-01"), 1, 0))
+
+# Assign city labels to treatment groups
+
+MN_Crime_Total <- MN_Crime_Total |>
+  mutate(
+    city = case_when(
+      treatment == 1 ~ "Minneapolis",
+      treatment == 0 ~ "St. Paul"))
+
+# DiD Plot with city labels
+
+ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "black") +
+  labs(
+    title = "Difference-in-Differences: Monthly Auto-Related Crime Trends",
+    subtitle = "Treatment (Minneapolis) vs Control (St. Paul) Groups",
+    x = "Month",
+    y = "Total Count of Auto-Related Crimes",
+    color = "City") +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12))
+    
+#Linear Regression 
+
+# Make sure the dataset is ungrouped
+
+MN_Crime_Total <- MN_Crime_Total |> ungroup()
+
+# Add predicted values from the linear model
+
+MN_Crime_Total <- MN_Crime_Total |>
+  mutate(predicted_crime = predict(lm_Crime, newdata = MN_Crime_Total))
+
+ggplot(MN_Crime_Total, aes(x = month, y = crime, color = city)) +
+  geom_point(alpha = 0.5) +
+  geom_line(aes(y = predicted_crime), size = 1.2) +
+  geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "black") +
+  labs(
+    title = "Linear Regression Plot: Difference-in-Differences",
+    subtitle = "Fitted DiD lines for Minneapolis (treatment) vs St. Paul (control)",
+    x = "Month",
+    y = "Total Count of Auto-Related Crimes",
+    color = "City"
+  ) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "6 months") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12))
