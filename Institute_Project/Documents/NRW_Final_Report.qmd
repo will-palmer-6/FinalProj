@@ -1,5 +1,5 @@
 ---
-title: "MAKE A TITLE"
+title: "The Effect of Minneapolis 2040 on Auto-Related Property Crime"
 author: 
   - Nya Gasowski^[American University]
   - Rian Russell^[American University]
@@ -14,7 +14,7 @@ date: 2026-01-10
 date-format: iso
 documentclass: article
 editor: source
-abstract: "In this paper, we examine the relationship between upzoning and the prevalence of non-violent crime, particularly auto theft and theft from auto in Minneapolis and St. Paul, Minnesota. In 2020, Minneapolis implemented the Minneapolis 2040 Plan, becoming the first U.S. city to eliminate single-family zoning, a reform expected to increase residential density. We consider this policy change as an experimental opportunity to study whether upzoning is in fact associated with real changes in auto-related property crime. Using neighborhood-level monthly crime data from 2017 to 2022, we construct a dataset combining police incident reports from Minneapolis and St. Paul. While only Minneapolis experienced the change in zoning, we consider St. Paul to be a control variable in this context due to its close proximity to Minneapolis. We found (add results from linear model here)."
+abstract: "We examine the relationship between upzoning and the occurrence of auto theft and theft from auto in Minneapolis and St. Paul, Minnesota. In 2020, Minneapolis implemented the Minneapolis 2040 Plan, becoming the first U.S. city to eliminate single-family zoning, a reform expected to increase residential density. We consider this policy change as an experimental opportunity to study whether upzoning is in fact associated with real changes in auto-related property crime. Using neighborhood-level monthly crime data from 2017 to 2022, we construct a dataset combining police incident reports from Minneapolis and St. Paul. While only Minneapolis experienced the change in zoning, we consider St. Paul to be a control variable in this context due to its close proximity and similar characteristics to Minneapolis. We estimate Difference-in-Differences models, including linear and Poisson generalized linear models, to compare trends in auto theft and theft from auto before and after the zoning change. (Add results here)."
 ---
 
 ```{r}
@@ -29,21 +29,19 @@ library(marginaleffects)
 
 ## Introduction
 
-In recent years, cities across the United States have increasingly turned to upzoning as a tool to address housing shortages, affordability concerns, and urban sprawl. Upzoning allows for higher-density development in previously low-density areas and has the potential to substantially reshape neighborhood composition and activity. While much literature examines the economic and housing-market effects of zoning reform, less is known about its implications for public safety. While many studies predict a positive relationship between density and crime, they often have considerably unique variables and limitations. Other research suggests that upzoning may instead reduce certain types of crime through natural surveillance, especially that which draw on Jane Jacobs’ “eyes on the street” theory. This is particularly in contrast to commercial density, which differs in that populations are often transient, creating gaps in surveillance while residential density offers more permanent awareness (Mitre-Becerril & MacDonald, 2024). When putting the Minneapolis 2040 plan into legislation, policy makers did so with the intended goal of improving housing affordability, transportation access, environmental sustainability, economic development, and public safety (City of Minneapolis DCPED, n.d.). The plan highlights pedestrian centered design, lighting, mixed-income housing, and crime prevention through environmental design, suggesting that increased residential density is intended to enhance neighborhood safety rather than exacerbate crime. We seek to explore how effective this legislation has really been in affecting crime prevalence, and if it reflects the intentions of the City of Minneapolis.
+In recent years, cities across the United States have increasingly turned to upzoning as a tool to address housing shortages, affordability concerns, and urban sprawl. Upzoning allows for higher-density development in previously low-density areas and has the potential to substantially reshape neighborhood composition and activity. While much literature examines the economic and housing-market effects of zoning reform, less is known about its implications for public safety. While many studies predict a positive relationship between density and crime, they often have considerably unique variables and limitations. Other research suggests that upzoning may instead reduce certain types of crime through natural surveillance, especially that which draw on Jane Jacobs’ “eyes on the street” theory. This is particularly in contrast to commercial density, which differs in that populations are often transient, creating gaps in surveillance while residential density offers more permanent awareness (Mitre-Becerril & MacDonald, 2024). When putting the Minneapolis 2040 plan into legislation, policy makers did so with the intended goal of improving housing affordability, transportation access, environmental sustainability, economic development, and public safety (City of Minneapolis DCPED, n.d.). The plan highlights pedestrian centered design, lighting, mixed-income housing, and crime prevention through environmental design, suggesting that increased residential density is intended to enhance neighborhood safety rather than exacerbate crime. We seek to explore how effective this legislation has really been in affecting crime occurrences, and if it reflects the intentions of the City of Minneapolis.
 
-Our analysis contributes to an ongoing debate about whether upzoning exacerbates crime. Considering theories of social disorganization and the potential of increased population due to the upzoning policy (Braithwaite, 1975), we hypothesize that upzoning increases auto theft and theft from auto by increasing the number of potential targets and offenders within an area. We test this hypothesis using monthly, neighborhood-level crime data from 2017 to 2022. We estimate difference-in-differences models, including Poisson generalized linear models (appropriate for count data), to compare crime trends before and after the reform and between Minneapolis and St. Paul.
+Our analysis contributes to an ongoing debate about whether upzoning exacerbates crime. Considering theories of social disorganization and the potential of increased population due to the upzoning policy, we hypothesize that upzoning increases auto theft and theft from auto by increasing the number of potential targets and offenders within an area (Braithwaite, 1975). We test this hypothesis using monthly, neighborhood-level crime data from 2017 to 2022.
 
 ## Zoning, Density, and Crime
 
 The influence of zoning density, which is the amount of development permitted in a certain unit of land, on crime rates has become an increasingly researched topic, drawing from a diverse range of fields, from criminology to urban planning. It is important to determine whether new zoning laws have led to an increase in crime so that these laws can be analyzed and amended if necessary.
 
-Many studies focus on psychological and criminological theories in examining the effects of density on crime. Clement et al. (2025), who look at urban density growth in different counties in the US and its effect on crime, refer to the social disorganization and routine activities theories. Ma et al. (2025), who similarly look at urban density growth in different counties but in China, bring up Maslow’s hierarchy of needs and Becker’s economic model of crime, which views offenders as individuals who weigh the benefits and costs of their actions.
+Many studies focus on psychological and criminological theories in examining the effects of density on crime. Clement et al. (2025) looks at urban density growth in different counties in the U.S. and its effect on crime, referring to the social disorganization and routine activities theories. Ma et al. (2025), which similarly looks at urban density growth in different counties but in China, brings up Maslow’s hierarchy of needs and Becker’s economic model of crime, which views offenders as individuals who weigh the benefits and costs of their actions.
 
-Recent research includes a variety of results. He and Li (2021), who look specifically at property crime in Dallas and Fort Worth, come to the conclusion that commercial and mixed-land use development, the number of transit facilities, and alcohol-related establishments like bars are positively associated with property crime rates in the two Texas cities, although their results are not generalizable. Clement et al. (2025) find that migration, which is the inflow of residents minus the outflow, is positively associated with vehicle theft rate, but many of their hypotheses were rejected. Ma et al. (2025) find that there is a positive correlation between urban density and urban crime rates, but their results are specific to China. Therefore, it is imperative that more research is done.
+Recent research includes a variety of results. He & Li (2021) looks specifically at property crime in Dallas and Fort Worth, leading to the conclusion that commercial and mixed-land use development, the number of transit facilities, and alcohol-related establishments like bars are positively associated with property crime rates in the two Texas cities, although the results are not generalizable. Clement et al. (2025) finds that migration, which is the inflow of residents minus the outflow, is positively associated with vehicle theft rate, but many of their hypotheses were rejected. Ma et al. (2025) finds that there is a positive correlation between urban density and urban crime rates, but the results are specific to China. Therefore, it is imperative that more research is done.
 
-There are also a number of methods that quantitative research uses, including ordinary least squares with lagged first-differences (as criminological research recommends using a three-year lag for longitudinal models), geographically weighted negative binomial regression, and two-stage least squares estimates (He & Li, 2021; Clement et al., 2025; Ma et al, 2025). However, (a number of other studies use GLM)
-
-In 2020, Minneapolis became the first city in the US to eliminate single-family zoning, which is defined as restricting residential areas to single-family homes, in its 2040 plan. The goal of single-family zoning is to maintain low density neighborhoods, meaning that this plan could lead to higher density neighborhoods (Gu & Murno, 2025).
+In 2020, Minneapolis became the first city in the U.S. to eliminate single-family zoning, which is defined as restricting residential areas to single-family homes, in its 2040 plan. The goal of single-family zoning is to maintain low density neighborhoods, meaning that this plan could lead to higher density neighborhoods (Gu & Murno, 2025). Some research on the effects of the Minneapolis 2040 plan has been done, with Davis et al. (2023) discussing how pro and anti density individuals can be predicted by their house typology and looking at how the disproportionate amount of power Minneapolis grants its local communities affects its residents. Mattila et al. (2025) also focuses on the populist public input in the planning process. However, we want to add to the research done around the Minneapolis 2040 plan by looking at the effects it has had on crime.
 
 ## Data and Methods
 
@@ -119,16 +117,15 @@ MN_CrimeRate <- MN_Crime_Total |>
          crime_rate = crime/pop)
 ```
 
-We perform this analysis using crime timestamp data from Open Information St. Paul (Citation) and Open Data Minneapolis (Citation). The data originally is formatted in crime occurrences. We aggregate this to crime count per month in each city as neighborhood size and county varies by city. This is a common metric for crime analysis like this. We filter the timeframe to 3 years before and after the implementation of Minneapolis’ upzoning, ranging from 2017-2022. We choose to specifically filter the data to just auto theft and theft of automobile related crimes. These are often less personal crimes and are more independent of other factors, making them optimal for analysis. These crimes are also generally easier to commit, making them more dynamic, especially with population density, and more likely to appear in data trends. DO WE NEED A CITATION FOR THIS. We also note that both cities define auto-related crime very similarly (Law firm). We clean and reformat the data using both R (Citation) and Redivis (Citation). 
+We perform this analysis using crime timestamp data from Open Information St. Paul (Saint Paul Minnesota, n.d.) and Open Data Minneapolis (The City of Minneapolis, 2017-2022). The data originally is formatted in crime occurrences. We aggregate this to crime count per month in each city as neighborhood size and county varies by city. This is a common metric for crime analysis like this. We filter the timeframe to 3 years before and after the implementation of Minneapolis’ upzoning, ranging from 2017-2022. We choose to specifically filter the data to just auto theft and theft of automobile related crimes. These are often less personal crimes and are more independent of other factors, making them optimal for analysis. These crimes are also generally easier to commit, making them more dynamic, especially with population density, and more likely to appear in data trends (Clement et al., 2025). We also note that both cities define auto-related crime very similarly (McDonough Law). We clean and reformat the data using both R (R Core Team, 2025) and Redivis (Redivis, 2025).
 
-Our analysis follows the DiD model already mentioned. We create a `treatment` variable, labeled 1 for crimes in Minneapolis (where upzoning occured) and 0 for crimes in St. Paul. We also create a `post` variable, labeled 1 for crimes after January 1st 2020, and 0 for crimes before. We assume that the parallel trends assumption is supported given the proximity and similarity of the cities. They have similar densities, educations, demographics, and population sizes (CITATION). Given this and their proximity, we assume they experience similar shocks from the pandemic, Black Lives Matter protests, and more.
+Our analysis follows the DiD model. We create a `treatment` variable, labeled 1 for crimes in Minneapolis (where upzoning occured) and 0 for crimes in St. Paul. We also create a `post` variable, labeled 1 for crimes after January 1st 2020, and 0 for crimes before. We assume that the parallel trends assumption is supported given the proximity and similarity of the cities. They have similar densities, educations, demographics, and population sizes (U.S. Census Bureau). Given this and their proximity, we assume they experience similar shocks from the pandemic, Black Lives Matter protests, and more.
 
 Our DiD model has 2 key components. First we estimate a DiD coefficient using traditional Ordinary Least Squares (OLS) linear model methodology. For this first model the outcome is `crime_rate`, which is defined as crimes per 100,000 residents per month in each city. Crime rate is regressed on the treatment and outcome variable and their interaction. The DiD result is represented by the coefficient on the interaction term ($\beta_3$).
 
-
 $$\text{Crime Rate}_i = \beta_0 + \beta_1 (\text{Treatment}_i) + \beta_2 (\text{Post}_i) + \beta_3 (\text{Treatment}_i * \text{Post}_i) + \epsilon_i.$$
 
-The second model is a Generalized Linear Model (GLM) following the Poisson distribution. Here we look at simply crime count and try to gain more information on non-linear crime trends. This kind of analysis is popular for count based data (CITATION FROM BELOW?). The distribution of our count data also generally follows the patterns and qualification of a Poisson model (@fig-poisson). 
+The second model is a Generalized Linear Model (GLM) following the Poisson distribution. Here we look at simply crime count and try to gain more information on non-linear crime trends. This kind of analysis is popular for count based data (Ahmed, 2024). The distribution of our count data also generally follows the patterns and qualification of a Poisson model (@fig-poisson).
 
 ```{r}
 #| label: fig-poisson
@@ -140,13 +137,11 @@ ggplot(data = MN_Crime_Total, aes(x = crime, y = after_stat(count))) + geom_hist
   labs(x = "Crime Occurences", y = "Number of Months")
 ```
 
-
 The predictors are the same for both models. We hope that with both these models we can gain insights into both simple linear and more complex non-linear trends about crime response’s to upzoning in cities like Minneapolis. We do however note that without any additional predictors from other datasets, excluding those controlled by St. Paul, there are without doubt numerous confounders which influence our results.
 
-Our analysis is performed in R using the tidyverse (CITATION), lubridate (CITATION), and marginaleffects (CITATION) package. These packages primarily help with data wrangling and interpretation of results. 
+Our analysis is performed in R using the tidyverse (Wickham et al., 2019), lubridate (Grolemund & Wickham, 2011), and marginaleffects (Arel-Bundock et al., 2024) packages. These packages primarily help with data wrangling and interpretation of results.
 
-
-## \[Our Results Section Title Here\]
+## Results
 
 Tba
 
@@ -154,14 +149,60 @@ Tba
 
 This report tackles a critical modern question, especially in the U.S., about how growing cities and populations can manage safety issues. As housing affordability grows as an issue, zoning and density measures will continue to be experimented with, and reports like this help understand the consequences of those policies.
 
-In this report, we utilize a DiD calculation with both OLS and GLM models to understand how theft crime rates relate to the upzoning measures part of Minneapolis’ 2040 plan. Our results are largely incomprehensive and therefore inconclusive. The results we do produce imply there is a positive association between crime rates and the upzoning measure. We believe this implies that many fears about density expansions have some merit and density arguments must continue to be held. 
+In this report, we utilize a DiD calculation with both OLS and GLM models to understand how theft crime rates relate to the upzoning measures part of Minneapolis’ 2040 plan. Our results are largely incomprehensive and therefore inconclusive. The results we do produce imply there is a positive association between crime rates and the upzoning measure. We believe this implies that many fears about density expansions have some merit and density arguments must continue to be held.
 
-However, we also recommend that more analysis is done, particularly incorporating other controls and predictors into models such as the ones we use to produce more isolated causal results. We especially recommend controlling for zoning differences. Due to time constraints, we estimated aggregate city effects, even though the policy only truly increased density in single family zones. Potentially looking at only single family districts would provide more exaggerated or different results altogether.  We also think looking at upzoning measures in other cities or different kinds of upzoning and density measures could reveal environments or policies which better control crime rates or even manage to reduce them. We recommend methods like random forests to determine which predictors would be valuable to include in future models.
+However, we also recommend that more analysis is done, particularly incorporating other controls and predictors into models such as the ones we use to produce more isolated causal results. We especially recommend controlling for zoning differences. Due to time constraints, we estimated aggregate city effects, even though the policy only truly increased density in single family zones. Potentially looking at only single family districts would provide more exaggerated or different results altogether. We also think looking at upzoning measures in other cities or different kinds of upzoning and density measures could reveal environments or policies which better control crime rates or even manage to reduce them. We recommend methods like random forests to determine which predictors would be valuable to include in future models.
 
-We believe this report reinforces the importance of debate and continued discussion in the field. All concerns are valid and continued data analysis is perhaps the best way to help determine which direction governments and cities should pursue. 
-
+We believe this report reinforces the importance of debate and continued discussion in the field. All concerns are valid and continued data analysis is perhaps the best way to help determine which direction governments and cities should pursue.
 
 \clearpage
 
 ## References
 
+Ahmed, S. (2024). A Comprehensive Introduction to Generalized Linear Models. Medium. [https://medium.com/\@sahin.samia/a-comprehensive-introduction-to-generalized-linear-models-fd773d460c1d](https://medium.com/@sahin.samia/a-comprehensive-introduction-to-generalized-linear-models-fd773d460c1d)
+
+Arel-Bundock, V., Greifer, N., & Heiss, A. (2024). How to Interpret Statistical Models Using marginaleffects for R and Python. Journal of Statistical Software, 111(9), 1–32.[ https://doi.org/10.18637/jss.v111.i09](https://doi.org/10.18637/jss.v111.i09)
+
+Braithwaite, J. (1975). Population growth and crime. Australian & New Zealand Journal of Criminology, 8(1), 57–61. <https://doi.org/10.1177/000486587500800107>
+
+City of Minneapolis. (n.d.). Minneapolis 2040 – The city’s comprehensive plan: Overview. [https://minneapolis2040.com/overview](https://minneapolis2040.com/overview/?utm_source=chatgpt.com)
+
+City of Minneapolis, Department of Community Planning and Economic Development. (2025). Planning and zoning overview. Minneapolis, MN: City of Minneapolis. Retrieved January 9, 2026, from [https://www.minneapolismn.gov/government/departments/cped/planning](https://www.minneapolismn.gov/government/departments/cped/planning/?utm_source=chatgpt.com)
+
+Clement, M. T., Pino, N. W., Dede-Bamfo, N., & DeWaard, J. (2025). Growth, density, and property crime: A longitudinal county-level study in the USA, 2001–2007. The Social Science Journal, 1–16. <https://doi.org/10.1080/03623319.2025.2475605>
+
+Grolemund, G., & Wickham, H. (2011). Dates and Times Made Easy with lubridate. Journal of Statistical Software, 40(3), 1–25.
+
+Gu, H., & Murno, D. (2025). Zoning reforms and housing affordability: Evidence from the Minneapolis 2040 Plan. Social Science Research Network. <https://dx.doi.org/10.2139/ssrn.5347083>
+
+He, Q., & Li, J. (2025). The roles of built environment and social disadvantage on the geography of property crime. Cities: The International Journal of Urban Policy and Planning. <https://doi.org/10.1016/j.cities.2021.103471>
+
+Ma, N. et al. (2025). Dangerous density: Urban density and the criminalization of China. International Review of Economics & Finance. <https://doi.org/10.1016/j.iref.2025.104025>
+
+McDonough Law. (n.d.) Theft of a motor vehicle. McDonough Law. [https://mcdonoughlawfirm.com/criminal-defense/theft-and-property-crimes/theft-of-a-motor-vehicle](https://mcdonoughlawfirm.com/criminal-defense/theft-and-property-crimes/theft-of-a-motor-vehicle/#:~:text=Theft%20of%20a%20motor%20vehicle%20does%20not,or%20an%20authorized%20agent%20of%20the%20owner)
+
+Mitre-Becerril, D., & MacDonald, J. M. (2024). Does urban development influence crime? Evidence from Philadelphia’s new zoning regulations. Journal of Urban Economics, 142, 103667. <https://doi.org/10.1016/j.jue.2024.103667>
+
+R Core Team. (2025). R: A Language and Environment for Statistical Computing. R Foundation for Statistical Computing.[ https://www.R-project.org](https://www.r-project.org/)
+
+Redivis. (2025). Redivis. Redivis.[ https://doi.org/10.71778/V2DW-7A53](https://doi.org/10.71778/V2DW-7A53)
+
+Saint Paul Minnesota. (n.d.) Crime Incident Report. Open Information Saint Paul. <https://information.stpaul.gov/datasets/stpaul::crime-incident-report/explore>
+
+The City of Minneapolis. (2017) Police Incidents 2017 \[Data set\]. Open Data Minneapolis. <https://opendata.minneapolismn.gov/maps/3d33a4f94a004fb5816936708642e045>
+
+The City of Minneapolis. (2018) Police Incidents 2018 \[Data set\]. Open Data Minneapolis. <https://opendata.minneapolismn.gov/maps/58e6f399e0f04c568b3ba45086d15818>
+
+The City of Minneapolis. (2019) Police Incidents 2019 \[Data set\]. Open Data Minneapolis. <https://opendata.minneapolismn.gov/maps/8cd15449ac344aa5a55be7840d67c52d>
+
+The City of Minneapolis. (2020) Police Incidents 2020 \[Data set\]. Open Data Minneapolis. <https://opendata.minneapolismn.gov/maps/35c7de976a60450bb894fc7aeb68aef6>
+
+The City of Minneapolis. (2021) Police Incidents 2021 \[Data set\]. Open Data Minneapolis. <https://opendata.minneapolismn.gov/maps/cb6a8b1d01b74feea5d3f96fa79bb6bf>
+
+The City of Minneapolis. (2022) Police Incidents 2022 \[Data set\]. Open Data Minneapolis. <https://opendata.minneapolismn.gov/maps/4ab42b4679fc4d0698531fa8a2994441>
+
+U.S. Census Bureau. (n.d.). QuickFacts: Minneapolis city, Minnesota. U.S. Census Bureau. [http://census.gov/quickfacts/fact/table/minneapoliscityminnesota](http://www.census.gov/quickfacts/fact/table/minneapoliscityminnesota)
+
+U.S. Census Bureau. (n.d.). QuickFacts: St. Paul city, Minnesota. U.S. Census Bureau. [http://](http://www.census.gov/quickfacts/fact/table/minneapoliscityminnesota)[census.gov/quickfacts/fact/table/stpaulcityminnesota](http://www.census.gov/quickfacts/fact/table/stpaulcityminnesota)
+
+Wickham, H., Averick, M., Bryan, J., Chang, W., McGowan, L. D., François, R., Grolemund, G., Hayes, A., Henry, L., Hester, J., Kuhn, M., Pedersen, T. L., Miller, E., Bache, S. M., Müller, K., Ooms, J., Robinson, D., Seidel, D. P., Spinu, V., … Yutani, H. (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686.[ https://doi.org/10.21105/joss.01686](https://doi.org/10.21105/joss.01686)
