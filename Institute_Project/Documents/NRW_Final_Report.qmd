@@ -210,7 +210,7 @@ Following this peak, auto-related crime declines steadily in both cities through
 
 This pattern continues until March 2022, when St. Paul’s auto-related crime exceeds that of Minneapolis for the only time during the study period. At this point, St. Paul records approximately 800 reported incidents, its highest monthly count in the sample, while Minneapolis’ crime count falls below 600. Subsequently, crime declines steadily in St. Paul, while Minneapolis experiences a sharp increase before both cities’ crime levels fall again during the winter months.
 
-Overall, the evidence presented in @fig-CR-Did supports the parallel trends assumption seen in the Difference-in-Differences regression model (@fig-CC-Did). Here @fig-CC-Did also shows the considerable baseline difference between crime in the two cities, and the considerable decline that occurred around January 2020 as seen in @fig-CR-Did.
+Overall, the evidence presented in @fig-CR-Did reveals that the parallel trends assumption may be violated and our assumptions innaccurate. Here @fig-CC-Did also shows the considerable baseline difference between crime in the two cities, and the considerable decline that occurred around January 2020 as seen in @fig-CR-Did.
 
 ```{r}
 #| label: fig-CC-Did
@@ -285,47 +285,32 @@ new_table_kable
 
 The estimated effects however are not statistically strong enough to conclude that the Minneapolis 2040 planning legislation directly caused or correlates to this outcome. This analysis does not explicitly account for major events occurring during the study period, notably the COVID-19 pandemic or the large-scale Black Lives Matter protests and civil unrest which may have disproportionately affected crime patterns in Minneapolis especially.
 
-Results from the linear DiD regression are displayed in @tbl-crimecount. The coefficient on the treatment indicator (-8.31) is negative and statistically insignificant, showing no meaningful difference in auto-related crime levels between Minneapolis and St. Paul prior to 2020. The post-period indicator (-45.30) is negative and statistically significant, reflecting a substantial decline in auto-related crime in the control group after 2020. The DiD P-Value (P = 0.10) is positive and marginally significant, but is weak and does give basis for conclusion. This estimate suggests that after considering baseline differences and typical trends over time, Minneapolis experienced approximately 19 additional auto-related crimes per month compared to St. Paul after the 2040 Plan.
+Results from the linear DiD regression are displayed in @tbl-crimecount. The coefficient on the treatment indicator (-8.31) is negative and statistically insignificant, showing no meaningful difference in auto-related crime levels between Minneapolis and St. Paul prior to 2020. The post-period indicator (-45.30) is negative and statistically significant, reflecting a substantial decline in auto-related crime in the control group after 2020. The DiD P-Value (P = 0.10) is not significant at the 95% level, implying no real basis for conclusion. This estimate suggests that after considering baseline differences and typical trends over time, Minneapolis experienced approximately 19 additional auto-related crimes per 100,000 people per month compared to St. Paul after the 2040 Plan.
 
 ```{r}
 #| label: tbl-crimecount
 #| echo: false
 #| warning: false
+#| tbl-cap: GLM Results
 
-CrimeRateTable <- tidy(lm_Crime)
-# 2. Rename the 'term' column values and capitalize everything
-CrimeRateTable <- CrimeRateTable %>%
-mutate(
-term = case_when(
-term == "(Intercept)" ~ "Intercept",
-term == "treatment" ~ "Treatment",
-term == "post" ~ "Post",
-term == "treatment:post" ~ "DiD Estimate",
-TRUE ~ term
-)
-)
-# Capitalize column headers
-colnames(CrimeRateTable) <- c("Term", "Estimate", "Std.Error", "Statistic", "P.Value")
-# 3. Print the table with kable
-CrimeRateTable2 <- kable(
-CrimeRateTable,
-digits = 2,
-caption = "Linear Regression (DiD) Results")
-CrimeRateTable2
+
+avg_slopes(glm_Crime, variables = "treatment", by = "post")
 
 ```
+
+POST - PRE = DID ESTIMATE, SOMEONE NEEDS TO TALK ABOUT THIS I DONT HAVE TIME, INCORPORATE IT INTO THE STUFF BELOW THANK YOU AND SORRY!!!!!!!!!!! (its in terms of count so interpret that way)
 
 To consider the nature of the outcome variable (count), we also estimate a Poisson generalized linear model. Estimates from this model are shown in @tbl-crimecount. In the linear regression results, the Intercept indicates that in St. Paul before 2020, the average monthly crime count was approximately 523.7, with a standard error of 21.88 (p < 0.001). The Treatment coefficient (166.97 (Std.Error = 30.95, p < 0.001)) shows that Minneapolis had a higher crime rate than St. Paul before 2020, reflecting baseline differences between the cities. The Post coefficient (−140.44 (Std.Error = 30.95, p < 0.001)) shows that the crime rate in St. Paul decreased by about 140 incidents per month after January 2020.
 
 The DiD Estimate is 25.33 (Std.Error = 43.76, p = 0.56). This positive estimate suggests that Minneapolis experienced a slight relative increase in crime rate after 2020 compared to St. Paul, but the effect is small and imprecise, as can be seen in the large standard error and insignificant p-value. Ultimately, results from all methods of statistical analysis used do not provide statistically strong evidence that the Minneapolis 2040 zoning reform affected crime rates.
 
-Our random forest model confirms many of these uncertain results. It reveals that our limited model only accounts for 14.76%, a fraction, of the actual variation in crime rates. It also highlights that the time period predictor seems significantly more important than the treatment city predictor (@fig-rf). Potentially this implies future research should focus on including variables which differ between Minneapolis and St. Paul to better capture parallel trends.
+Our random forest model confirms this uncertainty. It reveals that our limited model only accounts for 14.76%, a fraction, of the actual variation in crime rates. It also highlights that the time period predictor seems significantly more important than the treatment city predictor (@fig-rf). Potentially this implies future research should focus on including variables which differ between Minneapolis and St. Paul to better capture parallel trends. 
 
 ```{r}
 #| label: fig-rf
 #| echo: false
 #| warning: false
-#| fig-cap: Simple Random Forest
+#| fig-cap: Simple Random Forest (Variable Importance)
 
 varImpPlot(MN_rf)
 
@@ -335,9 +320,9 @@ varImpPlot(MN_rf)
 
 This report tackles a critical modern question, especially in the U.S., about how growing cities and populations can manage safety issues. As housing affordability grows as an issue, zoning and density measures will continue to be experimented with, and reports like this help understand the consequences of those policies.
 
-In this report, we utilize a DiD calculation with both OLS and GLM models to understand how theft crime rates relate to the upzoning measures part of Minneapolis’ 2040 plan. Our results are largely incomprehensive and therefore inconclusive. The results we do produce imply there is a positive association between crime rates and the upzoning measure. We believe this implies that many fears about density expansions have some merit and density arguments must continue to be held.
+In this report, we utilize a DiD calculation with both Linear OLS and GLM models to understand how theft crime rates relate to the upzoning measures part of Minneapolis’ 2040 plan. Our results are largely incomprehensive and therefore inconclusive. The results we do produce imply there is a positive association between crime rates and the upzoning measure. We believe this implies that many fears about density expansions have some merit and density arguments must continue to be held.
 
-However, we also recommend that more analysis is done, particularly incorporating other controls and predictors into models such as the ones we use to produce more isolated causal results. We especially recommend controlling for zoning differences. Due to time constraints, we estimated aggregate city effects, even though the policy only truly increased density in single family zones. Potentially looking at only single family districts would provide more exaggerated or different results altogether. We also think looking at upzoning measures in other cities or different kinds of upzoning and density measures could reveal environments or policies which better control crime rates or even manage to reduce them. We recommend methods like random forests to determine which predictors would be valuable to include in future models.
+However, we also recommend that more analysis is done, particularly incorporating other controls and predictors into models such as the ones we use to produce more isolated causal results. We especially recommend controlling for zoning differences. Due to time constraints, we estimated aggregate city effects, even though the policy only truly increased density in single family zones. Potentially looking at only single family districts would provide more exaggerated or different results altogether. We think created a synthetic DiD model could help satisfy the parallel trends assumption by creating a control synthetically much closer to Minneapolis than St. Paul is. We also think looking at upzoning measures in other cities or different kinds of upzoning and density measures could reveal environments or policies which better control crime rates or even manage to reduce them. We recommend methods like random forests to determine which predictors would be valuable to include in future models. Particularly, we recommend understanding lagged and time effects given the slow implementation of increased development and permits.
 
 We believe this report reinforces the importance of debate and continued discussion in the field. All concerns are valid and continued data analysis is perhaps the best way to help determine which direction governments and cities should pursue.
 
