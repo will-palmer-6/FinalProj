@@ -152,7 +152,14 @@ Tba
 
 ## Discussion
 
-Tba
+This report tackles a critical modern question, especially in the U.S., about how growing cities and populations can manage safety issues. As housing affordability grows as an issue, zoning and density measures will continue to be experimented with, and reports like this help understand the consequences of those policies.
+
+In this report, we utilize a DiD calculation with both OLS and GLM models to understand how theft crime rates relate to the upzoning measures part of Minneapolis’ 2040 plan. Our results are largely incomprehensive and therefore inconclusive. The results we do produce imply there is a positive association between crime rates and the upzoning measure. We believe this implies that many fears about density expansions have some merit and density arguments must continue to be held. 
+
+However, we also recommend that more analysis is done, particularly incorporating other controls and predictors into models such as the ones we use to produce more isolated causal results. We especially recommend controlling for zoning differences. Due to time constraints, we estimated aggregate city effects, even though the policy only truly increased density in single family zones. Potentially looking at only single family districts would provide more exaggerated or different results altogether.  We also think looking at upzoning measures in other cities or different kinds of upzoning and density measures could reveal environments or policies which better control crime rates or even manage to reduce them. We recommend methods like random forests to determine which predictors would be valuable to include in future models.
+
+We believe this report reinforces the importance of debate and continued discussion in the field. All concerns are valid and continued data analysis is perhaps the best way to help determine which direction governments and cities should pursue. 
+
 
 \clearpage
 
